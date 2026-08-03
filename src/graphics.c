@@ -68,12 +68,29 @@ void bounding_box(vec3 v0, vec3 v1, vec3 v2, int width, int height, char* screen
   if (max_x >= width) max_x = width-1; if (min_x<0) min_x=0;
   if (max_y >= height) max_y = height-1; if (min_y<0) min_y=0;
 
+  const char* gradient = ".:-+=a%#@"; 
+  int gradient_size = 10;
+
+  float z_near = -0.5f; float z_far = 0.5f;
+  struct vec3 light_dir = {1.0f,1.0f,0.5f};
+  
+  struct vec3 edge1 = sub_vec3(v1,v0); struct vec3 edge2 = sub_vec3(v2,v0);
+  struct vec3 normal = norm_vec3(cross_vec3(edge2, edge1));
+
+  float light_intensity = fmaxf(dot_vec3(normal, light_dir), 0.0f);
+
   for (int y=min_y; y<=max_y; y++){
     for (int x=min_x; x<=max_x; x++){
       struct vec3 lambda = baricentric_coords(v0,v1,v2,(float)x,(float)y);
       if (lambda.x>=0.0f && lambda.y>=0.0f && lambda.z>=0.0f){
         float z = v0.z*lambda.x + v1.z*lambda.y + v2.z*lambda.z;
-        draw(x,y,z,width,height,screen,z_buffer,'@');
+        float norm_z = (z-z_near) / (z_far-z_near);
+        norm_z = clamp(norm_z, 1.0f, 0.0f);
+        float intensity = (1-norm_z)*light_intensity;
+        int idx = (int)(intensity*(float)(gradient_size-1));
+        char sym = gradient[idx];
+
+        draw(x,y,z,width,height,screen,z_buffer,sym);
       }
     }
   }
@@ -189,7 +206,7 @@ int main(){
     clear_window(screen, z_buffer, buffer_size, WIDTH, HEIGHT);
     
     angle+=0.03f;
-    cube1.rotation = (struct vec3){0.0f, angle, 0.0f};
+    cube1.rotation = (struct vec3){angle*0.5f, angle, angle*0.25f};
     
     draw_model(cube1, WIDTH, HEIGHT, screen, z_buffer);
     printf("\x1b[H%s",screen);
