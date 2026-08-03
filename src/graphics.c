@@ -7,8 +7,12 @@
 #include "vector_funcs.h"
 #include "matrix.h"
 
-float clamp(float value, float max, float min){
+float clampf(float value, float max, float min){
   return fmaxf(fminf(value,max),min);
+}
+
+int clamp(int value, int maxv, int minv){
+  return (int)clampf(value, maxv, minv);
 }
 
 struct vec3 baricentric_coords(vec3 v0, vec3 v1, vec3 v2, float x, float y){
@@ -68,9 +72,6 @@ void bounding_box(vec3 v0, vec3 v1, vec3 v2, int width, int height, char* screen
   if (max_x >= width) max_x = width-1; if (min_x<0) min_x=0;
   if (max_y >= height) max_y = height-1; if (min_y<0) min_y=0;
 
-  const char* gradient = ".:-+=a%#@"; 
-  int gradient_size = 10;
-
   float z_near = -0.5f; float z_far = 0.5f;
   struct vec3 light_dir = {1.0f,1.0f,0.5f};
   
@@ -87,10 +88,11 @@ void bounding_box(vec3 v0, vec3 v1, vec3 v2, int width, int height, char* screen
         float norm_z = (z-z_near) / (z_far-z_near);
         norm_z = clamp(norm_z, 1.0f, 0.0f);
         float intensity = (1-norm_z)*light_intensity;
-        int idx = (int)(intensity*(float)(gradient_size-1));
-        char sym = gradient[idx];
-
-        draw(x,y,z,width,height,screen,z_buffer,sym);
+        
+        int brightness = (int)(intensity*254.0f)+1;
+        brightness = brightness>255 ? 255 : brightness;
+        brightness = brightness<1 ? 1 : brightness;
+        draw(x,y,z,width,height,screen,z_buffer,(char)brightness);
       }
     }
   }
@@ -155,12 +157,12 @@ void draw_model(struct Model3D model, int width, int height, char* screen, float
 
 void clear_window(char* screen, float* z_buffer, int buffer_size, int width, int height){
   for (int i=0; i<buffer_size; i++){
-    screen[i]=' ';
+    screen[i]=0;
   }
   screen[buffer_size-1]='\0';
 
   for (int y=0; y<height; y++){
-    screen[y * (width+1) + width]= '\n';
+    screen[y * (width+1) + width]= (char)255;
   }
 
   for (int i=0; i<width*height; i++){
@@ -201,15 +203,28 @@ int main(){
   cube1.position = (struct vec3){0.0f, 0.0f, 0.3f};
   cube1.rotation = (struct vec3){0,0,0};
   float angle = 0.0f;
-
+  int base_r = 255, base_g = 255, base_b = 255;
   while (1) {
     clear_window(screen, z_buffer, buffer_size, WIDTH, HEIGHT);
     
     angle+=0.03f;
-    cube1.rotation = (struct vec3){angle*0.5f, angle, angle*0.25f};
+    cube1.rotation = (struct vec3){0.0f, angle, angle*0.2f};
     
     draw_model(cube1, WIDTH, HEIGHT, screen, z_buffer);
-    printf("\x1b[H%s",screen);
+    printf("\x1b[H");
+
+    for (int y=0; y<HEIGHT; y++){
+      for (int x=0; x<WIDTH; x++){
+        unsigned char value = (unsigned char)screen[y*(WIDTH+1)+x];
+        if (value==0) printf("\x1b[48;2;0;0;0m ");
+        else{
+          int r = (base_r*value)/255; int g = (base_g*value)/255; int b = (base_b*value)/255;
+          printf("\x1b[48;2;%d;%d;%dm ",r,g,b);
+        }
+      }
+      printf("\x1b[0m\n");
+    }
+
     usleep(30000);
   } 
   getchar();
