@@ -15,7 +15,7 @@ typedef struct {
   Triangle* triangles;
   uint32_t triangles_count;
 
-  vec3 position; vec3 rotation;
+  vec3 position; vec3 rotation; vec3 scale;
 
 } Model3D;
 

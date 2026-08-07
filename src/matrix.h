@@ -71,4 +71,10 @@ static inline struct mat4 translation_mat(float dx, float dy, float dz){
   return mat;
 }
 
+static inline struct mat4 scale_mat(float sx, float sy, float sz){
+  mat4 mat = mat4_identity();
+  mat.m[0]=sx; mat.m[5]=sy; mat.m[10]=sz;
+  return mat;
+}
+
 #endif
