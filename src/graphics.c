@@ -3,6 +3,7 @@
 #include <math.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 #include <unistd.h>
 #include <stdint.h>
 #include <sys/ioctl.h>
@@ -11,6 +12,8 @@
 #include "obj_parser.h"
 #include "vector_funcs.h"
 #include "matrix.h"
+
+#define MAX_PATH_LEN 128
 
 float clamp(float value, float max, float min){
   return fmaxf(fminf(value,max),min);
@@ -159,9 +162,7 @@ void clear_window(char* screen, float* z_buffer, int buffer_size, int width, int
   }
 }
 
-
-
-int main(){
+int main(int argc, char *argv[]){
   struct winsize w;
   ioctl(STDOUT_FILENO, TIOCGWINSZ, &w);
   int WIDTH = w.ws_col;
@@ -171,38 +172,49 @@ int main(){
 
   char* screen = (char*)malloc(buffer_size*sizeof(char));
   float* z_buffer = (float*)malloc(WIDTH*HEIGHT*sizeof(float)); 
+  char input_buffer[64] = {0};
 
   float light_angle=0.0f;
   vec3 light_dir = (vec3){0.0f, 1.0f, 0.0f};
 
-  Model3D cube = load_obj("../obj/torus.obj");
-  cube.position = (vec3){0.0f, 0.0f, 3.3f};
-  cube.rotation = (vec3){0.0f,0.0f,0.0f};
-  cube.scale = (vec3){1.0f, 1.0f, 1.0f};
+  char path[MAX_PATH_LEN];
+
+  argc>1 ? snprintf(path, sizeof(path), "../obj/%s",argv[1]) : snprintf(path, sizeof(path),"../obj/cube.obj");
+
+  Model3D model = load_obj(path);
+  model.position = (vec3){0.0f, 0.0f, 3.3f};
+  model.rotation = (vec3){0.0f,0.0f,0.0f};
+  model.scale = (vec3){1.0f, 1.0f, 1.0f};
   float angle = 0.0f;
-#if 0 
-  printf("vertices count: %d\n", cube.vertices_count);
-  printf("triangles_count: %d\n", cube.triangles_count);
-  printf("%f %f %f\n", cube.vertices[0].position.x, cube.vertices[0].position.y, cube.vertices[0].position.z);
-#endif
+  int frames = (int)(2*M_PI / 0.03f);
+  
+  int running=1;
+
   printf("\x1b[?25l");
-  while (1) {
+  while (running) {
     clear_window(screen, z_buffer, buffer_size, WIDTH, HEIGHT);
     
-    light_angle+=0.02f;
-    light_dir.x = cosf(light_angle); light_dir.z = sinf(light_angle); 
+    //light_angle+=0.02f;
+    //light_dir.x = cosf(light_angle); light_dir.z = sinf(light_angle); 
     vec3 norm_light = norm_vec3(light_dir);
     
-    cube.rotation = (vec3){angle, angle, angle};
+    model.rotation = (vec3){angle, angle, angle};
     angle+=0.03f;
     
-    draw_light(norm_light, WIDTH, HEIGHT, screen, z_buffer);
-    draw_model(cube, norm_light, WIDTH, HEIGHT, screen, z_buffer);
+    //draw_light(norm_light, WIDTH, HEIGHT, screen, z_buffer);
+    draw_model(model, norm_light, WIDTH, HEIGHT, screen, z_buffer);
     printf("\x1b[H"); 
     fwrite(screen, sizeof(char), buffer_size - 1, stdout);
     fflush(stdout);
+
     usleep(16666);
+
+    //if (fgets(input_buffer,sizeof(input_buffer),stdin)==NULL) continue;
+    input_buffer[strcspn(input_buffer,"\n")]='\0';
+
+    if (strcmp(input_buffer,"q")==0) running=0;
+
   } 
-  getchar();
+  printf("\x1b[?25h");
   return 0;
 }
