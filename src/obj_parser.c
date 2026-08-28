@@ -3,7 +3,7 @@
 #include <stdint.h>
 #include <stdlib.h>
 #include "mesh_data.h"
-#include "vector_funcs.h"
+#include "vector.h"
 #include "obj_parser.h"
 
 Model3D load_obj(const char* filename){

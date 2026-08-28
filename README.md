@@ -18,9 +18,9 @@ Navigate to the build/ folder and launch the app:
 
 ```bash
 cmake -B build
-cmake --build build
+cd build && cmake --build .
 
-./build/graphics_app
+./graphics_app
 ```
 
 ### 2.1. Launch arguments 
@@ -28,5 +28,5 @@ cmake --build build
 To render your own .obj model, you need to specify the filename from the obj/ folder
 Example:
 ```bash
-./build/graphics_app suzanne.obj
+./graphics_app suzanne.obj
 ```

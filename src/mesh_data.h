@@ -1,7 +1,7 @@
 #ifndef MESH_DATA
 #define MESH_DATA
 
-#include "vector_funcs.h"
+#include "vector.h"
 #include <stdint.h>
 
 typedef struct { vec3 position; vec3 normal; }Vertex;

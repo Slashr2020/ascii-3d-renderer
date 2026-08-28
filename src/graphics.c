@@ -3,14 +3,13 @@
 #include <math.h>
 #include <stdio.h>
 #include <stdlib.h>
-#include <string.h>
 #include <unistd.h>
 #include <stdint.h>
 #include <sys/ioctl.h>
 
 #include "mesh_data.h"
 #include "obj_parser.h"
-#include "vector_funcs.h"
+#include "vector.h"
 #include "matrix.h"
 
 #define MAX_PATH_LEN 128
@@ -69,12 +68,6 @@ void bounding_box(vec3 v0, vec3 v1, vec3 v2, vec3 normal, vec3 light_dir, int wi
   const char* gradient = " .:!/r(l1Z4H9W8#$@"; 
   int gradient_size = 18;
 
-  float z_near = 0.0f; float z_far = 100.0f;
-#if 0 
-  vec3 edge1 = sub_vec3(v1,v0); struct vec3 edge2 = sub_vec3(v2,v0);
-  vec3 normal = norm_vec3(cross_vec3(edge2, edge1));
-#endif
-
   vec3 inv_light_dir = mul_vec3(light_dir, (vec3){-1.0f, -1.0f, -1.0f});
   float dot_nl = dot_vec3(normal,inv_light_dir);
   vec3 scaled_normal = mul_vec3(normal, (vec3){2.0f*dot_nl, 2.0f*dot_nl, 2.0f*dot_nl});
@@ -89,15 +82,9 @@ void bounding_box(vec3 v0, vec3 v1, vec3 v2, vec3 normal, vec3 light_dir, int wi
 
   float total_intensity = light_intensity + specular + ambient;
   total_intensity = clamp(total_intensity, 1.0f, 0.0f);
-#if 0
-  float norm_z = (z-z_near) / (z_far-z_near);
-  norm_z = clamp(norm_z, 1.0f, 0.0f);
-  float intensity = (1-norm_z)*light_intensity;
-#endif
   int idx = (int)(total_intensity*(float)(gradient_size-1));
   if (idx>=gradient_size) idx = gradient_size-1;
   char sym = gradient[idx];
-
 
   for (int y=min_y; y<=max_y; y++){
     for (int x=min_x; x<=max_x; x++){
@@ -172,7 +159,6 @@ int main(int argc, char *argv[]){
 
   char* screen = (char*)malloc(buffer_size*sizeof(char));
   float* z_buffer = (float*)malloc(WIDTH*HEIGHT*sizeof(float)); 
-  char input_buffer[64] = {0};
 
   float light_angle=0.0f;
   vec3 light_dir = (vec3){0.0f, 1.0f, 0.0f};
@@ -186,17 +172,14 @@ int main(int argc, char *argv[]){
   model.rotation = (vec3){0.0f,0.0f,0.0f};
   model.scale = (vec3){1.0f, 1.0f, 1.0f};
   float angle = 0.0f;
-  int frames = (int)(2*M_PI / 0.03f);
+
+  vec3 norm_light = norm_vec3(light_dir);
   
   int running=1;
 
   printf("\x1b[?25l");
   while (running) {
     clear_window(screen, z_buffer, buffer_size, WIDTH, HEIGHT);
-    
-    //light_angle+=0.02f;
-    //light_dir.x = cosf(light_angle); light_dir.z = sinf(light_angle); 
-    vec3 norm_light = norm_vec3(light_dir);
     
     model.rotation = (vec3){angle, angle, angle};
     angle+=0.03f;
@@ -208,12 +191,6 @@ int main(int argc, char *argv[]){
     fflush(stdout);
 
     usleep(16666);
-
-    //if (fgets(input_buffer,sizeof(input_buffer),stdin)==NULL) continue;
-    input_buffer[strcspn(input_buffer,"\n")]='\0';
-
-    if (strcmp(input_buffer,"q")==0) running=0;
-
   } 
   printf("\x1b[?25h");
   return 0;
